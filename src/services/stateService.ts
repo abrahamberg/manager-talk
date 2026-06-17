@@ -36,6 +36,9 @@ export function parseState(markdown: string): CoachState {
   return {
     currentLevel: parseCurrentLevel(markdown),
     currentStateSummary: parseStateSummary(markdown),
+    coachingFocus: parseNamedSection(markdown, 'Coaching Focus') || 'Establish the current level structure clearly.',
+    improvementStrategy: parseNamedSection(markdown, 'Improvement Strategy') || 'Ask focused questions that test the current level pass criteria.',
+    nextQuestionReason: parseNamedSection(markdown, 'Next Question Reason') || 'Start with a useful current-level practice question.',
     consecutiveGoodAnswers: parseConsecutiveGoodAnswers(markdown),
     currentQuestion: parseCurrentQuestion(markdown),
     questionsAskedAlready: parseAskedQuestions(markdown),
@@ -52,6 +55,15 @@ export function serializeState(state: CoachState): string {
     'Current State Summary:',
     state.currentStateSummary,
     '',
+    'Coaching Focus:',
+    state.coachingFocus,
+    '',
+    'Improvement Strategy:',
+    state.improvementStrategy,
+    '',
+    'Next Question Reason:',
+    state.nextQuestionReason,
+    '',
     `Consecutive Good Answers: ${state.consecutiveGoodAnswers}`,
     '',
     'Current Question:',
@@ -59,9 +71,6 @@ export function serializeState(state: CoachState): string {
     '',
     'Questions Asked Already:',
     ...serializeAskedQuestions(state.questionsAskedAlready),
-    '',
-    'Recent Evaluations:',
-    ...serializeRecentEvaluations(state.recentEvaluations),
     ''
   ].join('\n');
 }
@@ -70,6 +79,9 @@ export function createDefaultState(): CoachState {
   return {
     currentLevel: 1,
     currentStateSummary: 'The user is starting Level 1. No evaluated answers yet.',
+    coachingFocus: 'Practice clear action plus result answers.',
+    improvementStrategy: 'Use simple Level 1 questions until the user consistently answers in two short sentences.',
+    nextQuestionReason: 'Start with an easy daily-work question to establish the baseline.',
     consecutiveGoodAnswers: 0,
     currentQuestion: null,
     questionsAskedAlready: [],
@@ -86,7 +98,10 @@ function parseConsecutiveGoodAnswers(markdown: string): number {
 }
 
 function parseStateSummary(markdown: string): string {
-  const structured = parseSectionText(markdown, 'Current State Summary:', 'Consecutive Good Answers:');
+  const structured = parseSectionTextBeforeAny(markdown, 'Current State Summary:', [
+    'Coaching Focus:',
+    'Consecutive Good Answers:'
+  ]);
 
   if (structured) {
     return structured;
@@ -124,9 +139,36 @@ function parseAskedQuestions(markdown: string): AskedQuestion[] {
     return [];
   }
 
+  if (section.includes('|')) {
+    return section
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith('- ') && !line.includes('- none'))
+      .flatMap(parseCompactAskedQuestionRecord);
+  }
+
   const records = section.split(/\n(?=- ID: )/g).filter((record) => record.trim().startsWith('- ID:'));
 
   return records.flatMap(parseAskedQuestionRecord);
+}
+
+function parseCompactAskedQuestionRecord(line: string): AskedQuestion[] {
+  const [id, level, evaluation, question, summary] = line.replace(/^- /, '').split('|').map((part) => part.trim());
+
+  if (!id || !question) {
+    return [];
+  }
+
+  return [
+    {
+      id,
+      level: Number(level ?? 1),
+      question,
+      evaluation: parseEvaluationValue(evaluation ?? null),
+      summary: summary || 'No summary.',
+      askedAt: 'not-tracked'
+    }
+  ];
 }
 
 function parseAskedQuestionRecord(record: string): AskedQuestion[] {
@@ -192,6 +234,35 @@ function parseSectionText(markdown: string, startLabel: string, endLabel: string
   return rawContent.trim();
 }
 
+function parseNamedSection(markdown: string, label: string): string {
+  return parseSectionTextBeforeAny(markdown, `${label}:`, [
+    'Current State Summary:',
+    'Coaching Focus:',
+    'Improvement Strategy:',
+    'Next Question Reason:',
+    'Consecutive Good Answers:',
+    'Current Question:',
+    'Questions Asked Already:',
+    'Recent Evaluations:'
+  ]);
+}
+
+function parseSectionTextBeforeAny(markdown: string, startLabel: string, endLabels: string[]): string {
+  const startIndex = markdown.indexOf(startLabel);
+
+  if (startIndex === -1) {
+    return '';
+  }
+
+  const contentStart = startIndex + startLabel.length;
+  const contentEnd = endLabels
+    .map((label) => markdown.indexOf(label, contentStart))
+    .filter((index) => index !== -1)
+    .sort((left, right) => left - right)[0];
+
+  return markdown.slice(contentStart, contentEnd ?? markdown.length).trim();
+}
+
 function parseCurrentQuestionField(markdown: string, fieldName: string): string | null {
   const section = parseSectionText(markdown, 'Current Question:', 'Questions Asked Already:');
 
@@ -240,22 +311,9 @@ function serializeAskedQuestions(questions: AskedQuestion[]): string[] {
     return ['- none'];
   }
 
-  return questions.flatMap((question) => [
-    `- ID: ${question.id}`,
-    `  Level: ${question.level}`,
-    `  Question: ${question.question}`,
-    `  Evaluation: ${question.evaluation}`,
-    `  Summary: ${question.summary}`,
-    `  Asked At: ${question.askedAt}`
-  ]);
-}
-
-function serializeRecentEvaluations(evaluations: string[]): string[] {
-  if (evaluations.length === 0) {
-    return ['- none'];
-  }
-
-  return evaluations.slice(-10).map((evaluation) => `- ${evaluation}`);
+  return questions.map((question) =>
+    `- ${question.id} | ${question.level} | ${question.evaluation} | ${question.question} | ${trimForState(question.summary)}`
+  );
 }
 
 async function backupStateFile(): Promise<void> {
@@ -268,4 +326,8 @@ async function backupStateFile(): Promise<void> {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function trimForState(value: string): string {
+  return value.replace(/\s+/g, ' ').trim().slice(0, 160);
 }

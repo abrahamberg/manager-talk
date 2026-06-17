@@ -14,15 +14,19 @@ const speechStatusEl = document.querySelector('#speech-status');
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const canSpeakText = 'speechSynthesis' in window;
 const canRecognizeSpeech = Boolean(SpeechRecognition);
+const speechSilenceTimeoutMs = 3500;
 
 let mode = 'answering';
 let currentQuestion = null;
+let pendingNextQuestion = null;
 let roundContext = null;
 let recognition = null;
 let isListening = false;
 let lastCoachMessage = '';
 let currentAudio = null;
 let currentAudioUrl = null;
+let shouldKeepListening = false;
+let silenceTimer = null;
 
 formEl.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -42,7 +46,7 @@ formEl.addEventListener('submit', async (event) => {
 });
 
 nextButtonEl.addEventListener('click', async () => {
-  await loadNextQuestion(false);
+  await showNextQuestion();
 });
 
 micButtonEl.addEventListener('click', () => {
@@ -111,6 +115,7 @@ async function submitAnswer(answerText) {
 
     addMessage('coach', formatFeedback(feedback));
     updateProgress(feedback.currentLevel, feedback.consecutiveGoodAnswers);
+    pendingNextQuestion = feedback.nextQuestion;
     enterFollowUpMode();
   } catch (error) {
     addMessage('coach', getErrorMessage(error));
@@ -121,7 +126,7 @@ async function submitAnswer(answerText) {
 
 async function submitFollowUp(message) {
   if (message.toLowerCase() === 'next') {
-    await loadNextQuestion(false);
+    await showNextQuestion();
     return;
   }
 
@@ -133,7 +138,7 @@ async function submitFollowUp(message) {
     const response = await apiPost('/api/follow-up', { roundContext, message });
 
     if (response.next) {
-      await loadNextQuestion(false);
+      await showNextQuestion();
       return;
     }
 
@@ -145,6 +150,35 @@ async function submitFollowUp(message) {
   }
 }
 
+async function showNextQuestion() {
+  if (pendingNextQuestion) {
+    showQuestion(pendingNextQuestion);
+    return;
+  }
+
+  await loadNextQuestion(false);
+}
+
+function showQuestion(question) {
+  clearRoundUi();
+  currentQuestion = toQuestionResponse(question);
+  formatEl.textContent = currentQuestion.answerFormatSummary;
+  updateProgress(currentQuestion.level, null);
+  addMessage('coach', currentQuestion.questionText);
+}
+
+function toQuestionResponse(question) {
+  return {
+    level: question.level,
+    questionId: question.questionId ?? question.id,
+    questionText: question.questionText ?? question.text,
+    answerFormatSummary: question.answerFormatSummary,
+    expectedPattern: question.expectedPattern,
+    reasonForSelection: question.reasonForSelection ?? 'Preselected after previous answer.',
+    isIntentionalRepeat: question.isIntentionalRepeat ?? question.repeatIntentional ?? false
+  };
+}
+
 function enterFollowUpMode() {
   mode = 'follow_up';
   inputEl.placeholder = 'Ask a follow-up, or type next';
@@ -154,6 +188,7 @@ function enterFollowUpMode() {
 function clearRoundUi() {
   mode = 'answering';
   currentQuestion = null;
+  pendingNextQuestion = null;
   roundContext = null;
   messagesEl.innerHTML = '';
   inputEl.value = '';
@@ -222,10 +257,10 @@ function setupSpeechRecognition() {
   recognition = new SpeechRecognition();
   recognition.lang = 'en-US';
   recognition.interimResults = true;
-  recognition.continuous = false;
+  recognition.continuous = true;
 
   recognition.addEventListener('result', handleSpeechResult);
-  recognition.addEventListener('end', stopListeningUi);
+  recognition.addEventListener('end', handleSpeechEnd);
   recognition.addEventListener('error', handleSpeechError);
 }
 
@@ -236,7 +271,7 @@ function toggleSpeechRecognition() {
   }
 
   if (isListening) {
-    recognition.stop();
+    stopListening();
     return;
   }
 
@@ -246,13 +281,17 @@ function toggleSpeechRecognition() {
 function startListening() {
   stopSpeaking();
   isListening = true;
+  shouldKeepListening = true;
   micButtonEl.textContent = 'Listening...';
   micButtonEl.classList.add('is-listening');
-  setSpeechStatus('Listening. Speak your answer now.');
+  setSpeechStatus('Listening. Short pauses are okay; I stop after a few seconds of silence.');
+  restartSilenceTimer();
   recognition.start();
 }
 
 function handleSpeechResult(event) {
+  restartSilenceTimer();
+
   const transcript = Array.from(event.results)
     .map((result) => result[0]?.transcript ?? '')
     .join('')
@@ -262,15 +301,53 @@ function handleSpeechResult(event) {
 }
 
 function handleSpeechError(event) {
+  shouldKeepListening = false;
   stopListeningUi();
   setSpeechStatus(`Speech-to-text stopped: ${event.error}.`);
 }
 
+function handleSpeechEnd() {
+  if (!shouldKeepListening) {
+    stopListeningUi();
+    return;
+  }
+
+  try {
+    recognition.start();
+  } catch {
+    stopListeningUi();
+  }
+}
+
+function stopListening() {
+  shouldKeepListening = false;
+  clearSilenceTimer();
+  recognition.stop();
+  stopListeningUi();
+}
+
 function stopListeningUi() {
   isListening = false;
+  shouldKeepListening = false;
+  clearSilenceTimer();
   micButtonEl.textContent = 'Speak';
   micButtonEl.classList.remove('is-listening');
   updateSpeechStatus();
+}
+
+function restartSilenceTimer() {
+  clearSilenceTimer();
+  silenceTimer = window.setTimeout(() => {
+    stopListening();
+    setSpeechStatus('Stopped after a short silence. You can press Speak again to continue.');
+  }, speechSilenceTimeoutMs);
+}
+
+function clearSilenceTimer() {
+  if (silenceTimer) {
+    window.clearTimeout(silenceTimer);
+    silenceTimer = null;
+  }
 }
 
 async function speakTextIfEnabled(text) {

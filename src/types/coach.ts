@@ -21,6 +21,9 @@ export interface AskedQuestion {
 export interface CoachState {
   currentLevel: number;
   currentStateSummary: string;
+  coachingFocus: string;
+  improvementStrategy: string;
+  nextQuestionReason: string;
   consecutiveGoodAnswers: number;
   currentQuestion: CurrentQuestion | null;
   questionsAskedAlready: AskedQuestion[];
@@ -53,9 +56,12 @@ export interface FeedbackEvaluation {
   feedbackToUser: string;
   missingElements: string[];
   improvedAnswer: string;
-  stateSummaryUpdate: string;
+  compactStateSummary: string;
+  coachingFocus: string;
+  improvementStrategy: string;
   shouldRepeatQuestion: boolean;
   nextLevelRecommended: boolean;
+  nextQuestion: QuestionSelection | null;
 }
 
 export interface RoundContext {

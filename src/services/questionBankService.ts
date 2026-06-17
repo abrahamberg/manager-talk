@@ -1,6 +1,6 @@
 import type { AskedQuestion, CoachState, QuestionSelection } from '../types/coach.js';
 
-interface ParsedQuestion {
+export interface ParsedQuestion {
   id: string;
   category: string;
   text: string;
@@ -17,7 +17,7 @@ export function isDuplicateQuestion(selection: QuestionSelection, state: CoachSt
 }
 
 export function chooseFallbackQuestion(levelInputs: string, state: CoachState): QuestionSelection {
-  const question = parseLevelQuestions(levelInputs, state.currentLevel).find((candidate) => !wasAsked(candidate, state));
+  const question = chooseQuestionByStrategy(levelInputs, state);
 
   if (!question) {
     throw new Error(`No unused questions remain for level ${state.currentLevel}.`);
@@ -29,9 +29,13 @@ export function chooseFallbackQuestion(levelInputs: string, state: CoachState): 
     questionText: question.text,
     answerFormatSummary: extractAnswerFormatSummary(levelInputs),
     expectedPattern: extractExpectedPattern(levelInputs),
-    reasonForSelection: 'Deterministic fallback selected the first unused question.',
+    reasonForSelection: `Fallback selected an unused ${question.category} question based on current coaching focus.`,
     isIntentionalRepeat: false
   };
+}
+
+export function getRecentAskedQuestions(questions: AskedQuestion[], limit: number): AskedQuestion[] {
+  return questions.slice(-limit);
 }
 
 export function normalizeSelectionFromLevelFile(selection: QuestionSelection, levelInputs: string, state: CoachState): QuestionSelection | null {
@@ -122,7 +126,7 @@ function wasAsked(question: ParsedQuestion, state: CoachState): boolean {
   );
 }
 
-function parseLevelQuestions(levelInputs: string, level: number): ParsedQuestion[] {
+export function parseLevelQuestions(levelInputs: string, level: number): ParsedQuestion[] {
   const lines = levelInputs.split('\n');
   const questions: ParsedQuestion[] = [];
   let category = 'general';
@@ -149,6 +153,37 @@ function parseLevelQuestions(levelInputs: string, level: number): ParsedQuestion
   }
 
   return questions;
+}
+
+function chooseQuestionByStrategy(levelInputs: string, state: CoachState): ParsedQuestion | null {
+  const unusedQuestions = parseLevelQuestions(levelInputs, state.currentLevel).filter((candidate) => !wasAsked(candidate, state));
+
+  if (unusedQuestions.length === 0) {
+    return null;
+  }
+
+  const strategyText = `${state.coachingFocus} ${state.improvementStrategy}`.toLowerCase();
+  const matchingQuestion = unusedQuestions.find((question) => strategyText.includes(question.category.replace(/-/g, ' ')));
+
+  if (matchingQuestion) {
+    return matchingQuestion;
+  }
+
+  return chooseLeastRecentlyUsedCategory(unusedQuestions, state.questionsAskedAlready);
+}
+
+function chooseLeastRecentlyUsedCategory(unusedQuestions: ParsedQuestion[], askedQuestions: AskedQuestion[]): ParsedQuestion {
+  const recentAskedText = getRecentAskedQuestions(askedQuestions, 3)
+    .map((question) => question.id)
+    .join(' ');
+
+  const fallbackQuestion = unusedQuestions[0];
+
+  if (!fallbackQuestion) {
+    throw new Error('No unused questions were provided for fallback selection.');
+  }
+
+  return unusedQuestions.find((question) => !recentAskedText.includes(question.category)) ?? fallbackQuestion;
 }
 
 function slugify(value: string): string {

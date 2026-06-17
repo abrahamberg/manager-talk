@@ -18,7 +18,7 @@ Build a TypeScript-based communication coach application that:
 10. Moves the user to the next level after 5 good answers in a row.
 11. Never asks the same question again unless the user gave a bad answer and the coach intentionally repeats it.
 12. Supports user follow-up questions after feedback until the user types `next`.
-13. Uses two separate LLM calls per training round: one for choosing the next question and one for evaluating/giving feedback.
+13. Uses answer evaluation as the main LLM call: evaluate feedback, rewrite compact state, and choose the next question in one response.
 14. Orders prompt messages to maximize OpenAI input caching: static content first, current level content second last, current state last.
 
 ## 2. Existing Files
@@ -101,7 +101,7 @@ During this mode:
 
 ## 5. State Model
 
-The current `state.md` is free text. Keep it human-readable but make the format more structured so code can parse and update it reliably.
+Keep `state.md` human-readable, structured, and compact. Rewrite it after each evaluated answer instead of appending long transcripts.
 
 Use this exact format:
 
@@ -127,6 +127,8 @@ Questions Asked Already:
 Recent Evaluations:
 - none
 ```
+
+Current implementation note: prefer compact asked-question rows and omit `Recent Evaluations` from newly written state. Store only useful progress context, current focus, improvement strategy, next-question reason, current question, and short asked-question summaries.
 
 Each question record should use this format:
 

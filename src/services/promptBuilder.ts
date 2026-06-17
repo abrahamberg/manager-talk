@@ -110,12 +110,20 @@ function buildFeedbackTask(question: QuestionSelection, answerText: string): str
     '- feedbackToUser must be concise: maximum two short sentences.',
     '- If weak, name the single most important missing element.',
     '- improvedAnswer must follow the current level expected pattern.',
-    '- stateSummaryUpdate must be one short factual sentence about progress or the gap.',
+    '- compactStateSummary must replace the previous state summary with one short factual sentence.',
+    '- coachingFocus must say what communication skill the user is currently working on.',
+    '- improvementStrategy must say why the next question helps the user improve.',
     '- shouldRepeatQuestion should be true only when repeating this same question is useful practice.',
     '- nextLevelRecommended can be true only if this answer is good; backend decides actual progression.',
+    '- Also choose the next question now, in this same response.',
+    '- Select the next question by reasoning from the most useful category in the same level, not by file order.',
+    '- nextQuestion.questionText must be copied exactly from inputs-levelX.md unless shouldRepeatQuestion is true.',
+    '- Do not invent or reword next questions.',
+    '- nextQuestion.reasonForSelection must explain the category choice and coaching reason in one sentence.',
+    '- Set nextQuestion to null only if the course is complete or no current-level question remains.',
     '',
     'Return this JSON object exactly:',
-    '{"level":1,"questionId":"level1-category-001","questionText":"Question?","isGoodAnswer":true,"score":4,"feedbackToUser":"Concise feedback.","missingElements":[],"improvedAnswer":"Improved answer.","stateSummaryUpdate":"Short state note.","shouldRepeatQuestion":false,"nextLevelRecommended":false}'
+    '{"level":1,"questionId":"level1-category-001","questionText":"Question?","isGoodAnswer":true,"score":4,"feedbackToUser":"Concise feedback.","missingElements":[],"improvedAnswer":"Improved answer.","compactStateSummary":"Short state note.","coachingFocus":"Current skill focus.","improvementStrategy":"Why this next practice helps.","shouldRepeatQuestion":false,"nextLevelRecommended":false,"nextQuestion":{"level":1,"questionId":"level1-category-002","questionText":"Next exact question?","answerFormatSummary":"Short format instruction.","expectedPattern":"Expected answer pattern.","reasonForSelection":"Category and coaching reason.","isIntentionalRepeat":false}}'
   ].join('\n');
 }
 

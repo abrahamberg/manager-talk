@@ -1,6 +1,6 @@
 import { readStaticCoachFiles, levelInputsExist, readLevelInputs } from './courseFileService.js';
-import { evaluateAnswer, selectQuestion, answerFollowUp } from './llmService.js';
-import { buildFeedbackMessages, buildFollowUpMessages, buildQuestionSelectionMessages } from './promptBuilder.js';
+import { evaluateAnswer, answerFollowUp } from './llmService.js';
+import { buildFeedbackMessages, buildFollowUpMessages } from './promptBuilder.js';
 import {
   chooseFallbackQuestion,
   extractAnswerFormatSummary,
@@ -25,14 +25,13 @@ export async function getSession() {
 
 export async function getNextQuestion(forceNew: boolean) {
   const state = await readState();
+  const levelInputs = await readLevelInputs(state.currentLevel);
 
   if (state.currentQuestion && !forceNew) {
-    return questionFromCurrentState(state, await readLevelInputs(state.currentLevel));
+    return questionFromCurrentState(state, levelInputs);
   }
 
-  const stateMarkdown = await readStateMarkdown();
-  const files = await readStaticCoachFiles(state.currentLevel, stateMarkdown);
-  const selection = await chooseNonDuplicateQuestion(files, state);
+  const selection = chooseFallbackQuestion(levelInputs, state);
   const nextState = rememberCurrentQuestion(state, selection);
 
   await writeState(nextState);
@@ -50,7 +49,8 @@ export async function submitAnswer(input: AnswerRequest) {
   const question = buildQuestionFromState(state);
   const messages = buildFeedbackMessages({ files, question, answerText: input.answerText });
   const evaluation = await evaluateAnswer(messages);
-  const updatedState = await applyEvaluation(state, evaluation);
+  const updatedState = await applyEvaluation(state, evaluation, files.levelInputs);
+  const nextQuestion = await buildResponseNextQuestion(updatedState.state);
 
   await writeState(updatedState.state);
 
@@ -61,7 +61,8 @@ export async function submitAnswer(input: AnswerRequest) {
     improvedAnswer: evaluation.improvedAnswer,
     currentLevel: updatedState.state.currentLevel,
     consecutiveGoodAnswers: updatedState.state.consecutiveGoodAnswers,
-    movedToNextLevel: updatedState.movedToNextLevel
+    movedToNextLevel: updatedState.movedToNextLevel,
+    nextQuestion
   };
 }
 
@@ -79,37 +80,6 @@ export async function submitFollowUp(input: FollowUpRequest) {
   });
 
   return { answer: await answerFollowUp(messages) };
-}
-
-async function chooseNonDuplicateQuestion(files: Awaited<ReturnType<typeof readStaticCoachFiles>>, state: CoachState): Promise<QuestionSelection> {
-  const firstSelection = await selectQuestion(buildQuestionSelectionMessages(files));
-  const firstValidSelection = normalizeSelectionFromLevelFile(firstSelection, files.levelInputs, state);
-
-  if (firstValidSelection && !isDuplicateQuestion(firstValidSelection, state)) {
-    return firstValidSelection;
-  }
-
-  const duplicateWarning = buildSelectionRetryWarning(firstSelection, firstValidSelection, state);
-  const secondSelection = await selectQuestion(buildQuestionSelectionMessages(files, duplicateWarning));
-  const secondValidSelection = normalizeSelectionFromLevelFile(secondSelection, files.levelInputs, state);
-
-  if (secondValidSelection && !isDuplicateQuestion(secondValidSelection, state)) {
-    return secondValidSelection;
-  }
-
-  return chooseFallbackQuestion(files.levelInputs, state);
-}
-
-function buildSelectionRetryWarning(selection: QuestionSelection, validSelection: QuestionSelection | null, state: CoachState): string {
-  if (!validSelection) {
-    return `The selected question is not an exact question from inputs-level${state.currentLevel}.md. Select an unused question from that file only.`;
-  }
-
-  if (isDuplicateQuestion(validSelection, state)) {
-    return 'The selected question was already asked. Select a different unused question from the current level file.';
-  }
-
-  return `The selected question was invalid: ${selection.questionText}`;
 }
 
 function questionFromCurrentState(state: CoachState, levelInputs: string): QuestionSelection {
@@ -172,51 +142,77 @@ function buildQuestionFromState(state: CoachState): QuestionSelection {
   };
 }
 
-async function applyEvaluation(state: CoachState, evaluation: FeedbackEvaluation): Promise<{ state: CoachState; movedToNextLevel: boolean }> {
+async function applyEvaluation(
+  state: CoachState,
+  evaluation: FeedbackEvaluation,
+  levelInputs: string
+): Promise<{ state: CoachState; movedToNextLevel: boolean }> {
   const askedQuestion = createAskedQuestion(state, evaluation);
-  const nextState = appendEvaluation(state, askedQuestion, evaluation);
+  const nextState = rewriteCompactState(state, askedQuestion, evaluation);
 
   if (!evaluation.isGoodAnswer) {
-    return { state: applyWeakAnswer(nextState, evaluation), movedToNextLevel: false };
+    return { state: applyWeakAnswer(nextState, evaluation, levelInputs), movedToNextLevel: false };
   }
 
-  return applyGoodAnswer(nextState, evaluation);
+  return applyGoodAnswer(nextState, evaluation, levelInputs);
 }
 
 function createAskedQuestion(state: CoachState, evaluation: FeedbackEvaluation): AskedQuestion {
+  const currentQuestion = state.currentQuestion;
+
+  if (!currentQuestion) {
+    throw new StaleQuestionError('No active question. Request the next question first.');
+  }
+
   return {
-    id: evaluation.questionId,
+    id: currentQuestion.id,
     level: state.currentLevel,
-    question: evaluation.questionText,
+    question: currentQuestion.text,
     evaluation: evaluation.isGoodAnswer ? 'good' : 'needs_improvement',
-    summary: evaluation.stateSummaryUpdate,
+    summary: evaluation.compactStateSummary,
     askedAt: new Date().toISOString()
   };
 }
 
-function appendEvaluation(state: CoachState, askedQuestion: AskedQuestion, evaluation: FeedbackEvaluation): CoachState {
+function rewriteCompactState(state: CoachState, askedQuestion: AskedQuestion, evaluation: FeedbackEvaluation): CoachState {
   return {
     ...state,
-    currentStateSummary: evaluation.stateSummaryUpdate,
+    currentStateSummary: evaluation.compactStateSummary,
+    coachingFocus: evaluation.coachingFocus,
+    improvementStrategy: evaluation.improvementStrategy,
     questionsAskedAlready: upsertAskedQuestion(state.questionsAskedAlready, askedQuestion),
-    recentEvaluations: [...state.recentEvaluations, `${evaluation.questionText}: ${evaluation.feedbackToUser}`].slice(-10)
+    recentEvaluations: []
   };
 }
 
-function applyWeakAnswer(state: CoachState, evaluation: FeedbackEvaluation): CoachState {
+function applyWeakAnswer(state: CoachState, evaluation: FeedbackEvaluation, levelInputs: string): CoachState {
+  const selection = chooseNextQuestionAfterEvaluation(state, evaluation, levelInputs);
+
   return {
     ...state,
     consecutiveGoodAnswers: 0,
-    currentQuestion: evaluation.shouldRepeatQuestion && state.currentQuestion ? { ...state.currentQuestion, repeatIntentional: true } : null
+    nextQuestionReason: selection?.reasonForSelection ?? evaluation.improvementStrategy,
+    currentQuestion: selection ? currentQuestionFromSelection(selection) : null
   };
 }
 
-async function applyGoodAnswer(state: CoachState, evaluation: FeedbackEvaluation): Promise<{ state: CoachState; movedToNextLevel: boolean }> {
+async function applyGoodAnswer(
+  state: CoachState,
+  evaluation: FeedbackEvaluation,
+  levelInputs: string
+): Promise<{ state: CoachState; movedToNextLevel: boolean }> {
   const consecutiveGoodAnswers = state.consecutiveGoodAnswers + 1;
 
   if (consecutiveGoodAnswers < 5) {
+    const selection = chooseNextQuestionAfterEvaluation({ ...state, consecutiveGoodAnswers }, evaluation, levelInputs);
+
     return {
-      state: { ...state, consecutiveGoodAnswers, currentQuestion: null },
+      state: {
+        ...state,
+        consecutiveGoodAnswers,
+        nextQuestionReason: selection?.reasonForSelection ?? evaluation.improvementStrategy,
+        currentQuestion: selection ? currentQuestionFromSelection(selection) : null
+      },
       movedToNextLevel: false
     };
   }
@@ -228,11 +224,22 @@ async function moveToNextLevelIfAvailable(state: CoachState, evaluation: Feedbac
   const nextLevel = state.currentLevel + 1;
 
   if (await levelInputsExist(nextLevel)) {
+    const nextLevelState = {
+      ...state,
+      currentLevel: nextLevel,
+      currentStateSummary: `Moved to Level ${nextLevel}. ${evaluation.compactStateSummary}`,
+      coachingFocus: 'Start practicing the next level structure.',
+      improvementStrategy: 'Begin with a focused question from the new level to establish baseline performance.',
+      nextQuestionReason: 'First available question for the new level after progression.'
+    };
+    const nextLevelInputs = await readLevelInputs(nextLevel);
+    const selection = chooseFallbackQuestion(nextLevelInputs, nextLevelState);
+
     return {
       state: {
-        ...state,
-        currentLevel: nextLevel,
-        currentStateSummary: `Moved to Level ${nextLevel}. ${evaluation.stateSummaryUpdate}`
+        ...nextLevelState,
+        nextQuestionReason: selection.reasonForSelection,
+        currentQuestion: currentQuestionFromSelection(selection)
       },
       movedToNextLevel: true
     };
@@ -245,6 +252,45 @@ async function moveToNextLevelIfAvailable(state: CoachState, evaluation: Feedbac
     },
     movedToNextLevel: false
   };
+}
+
+function chooseNextQuestionAfterEvaluation(state: CoachState, evaluation: FeedbackEvaluation, levelInputs: string): QuestionSelection | null {
+  if (evaluation.shouldRepeatQuestion && state.currentQuestion) {
+    return questionFromCurrentState({ ...state, currentQuestion: { ...state.currentQuestion, repeatIntentional: true } }, levelInputs);
+  }
+
+  if (evaluation.nextQuestion) {
+    const validSelection = normalizeSelectionFromLevelFile(evaluation.nextQuestion, levelInputs, state);
+
+    if (validSelection && !isDuplicateQuestion(validSelection, state)) {
+      return validSelection;
+    }
+  }
+
+  try {
+    return chooseFallbackQuestion(levelInputs, state);
+  } catch {
+    return null;
+  }
+}
+
+function currentQuestionFromSelection(selection: QuestionSelection) {
+  return {
+    id: selection.questionId,
+    text: selection.questionText,
+    answerFormatSummary: selection.answerFormatSummary,
+    expectedPattern: selection.expectedPattern,
+    askedAt: new Date().toISOString(),
+    repeatIntentional: selection.isIntentionalRepeat
+  };
+}
+
+async function buildResponseNextQuestion(state: CoachState): Promise<QuestionSelection | null> {
+  if (!state.currentQuestion) {
+    return null;
+  }
+
+  return questionFromCurrentState(state, await readLevelInputs(state.currentLevel));
 }
 
 function upsertAskedQuestion(questions: AskedQuestion[], question: AskedQuestion): AskedQuestion[] {

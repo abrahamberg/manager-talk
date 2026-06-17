@@ -19,9 +19,12 @@ export const FeedbackEvaluationSchema = z.object({
   feedbackToUser: z.string().min(1),
   missingElements: z.array(z.string()),
   improvedAnswer: z.string().min(1),
-  stateSummaryUpdate: z.string().min(1),
+  compactStateSummary: z.string().min(1),
+  coachingFocus: z.string().min(1),
+  improvementStrategy: z.string().min(1),
   shouldRepeatQuestion: z.boolean(),
-  nextLevelRecommended: z.boolean()
+  nextLevelRecommended: z.boolean(),
+  nextQuestion: QuestionSelectionSchema.nullable()
 });
 
 export type QuestionSelectionOutput = z.infer<typeof QuestionSelectionSchema>;

@@ -7,6 +7,8 @@
 - Treat `cource-echema.md` as the source of truth for the communication ladder and pass criteria, despite spelling mistakes in the filename.
 - Use `inputs-level1.md` through `inputs-level11.md` as the available question banks; do not implement Level 12 questions unless `inputs-level12.md` is added.
 - `state.md` is user progress data, not disposable sample data. Do not overwrite it without preserving progress or making a backup.
+- Keep `state.md` compact. Each evaluated answer should rewrite it as a short current state, focus, strategy, next-question reason, current question, and compact asked-question list.
+- `LLM_log/` contains per-call prompts, outputs, token usage, and user answers. It is gitignored and should not be committed.
 - `implementation-plan.md` is the current implementation blueprint. Keep it aligned with product changes.
 
 ## Implementation Guardrails
@@ -17,7 +19,9 @@
 - Keep task-specific prompt text after the file-content blocks so cached static context stays stable.
 - LLM calls default to `OPENAI_SERVICE_TIER=flex`; preserve that unless there is a concrete reason to change it.
 - Coach text-to-speech uses OpenAI TTS by default: `OPENAI_TTS_MODEL=gpt-4o-mini-tts`, `OPENAI_TTS_VOICE=marin`.
-- Use two separate LLM flows: one to choose the next question and one to evaluate feedback. Follow-up questions after feedback must not update `state.md`.
+- Use answer evaluation as the main LLM flow: it should evaluate feedback, rewrite compact state, and choose the next question in one call. Follow-up questions after feedback must not update `state.md`.
+- Initial/no-current-question fallback may choose a question in code, but normal progression should use the next question selected by reasoning during answer evaluation.
+- Select next questions by coaching reason from the most useful category in the same level, not by file order. Backend must still validate the selected question exists in `inputs-levelX.md`.
 - Enforce duplicate-question prevention in code, even if the LLM selects a duplicate.
 
 ## Code Structure

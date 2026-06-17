@@ -1,0 +1,122 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { llmLogDir } from '../config.js';
+import type { ChatMessage } from '../types/coach.js';
+
+interface LlmLogUsage {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+  cachedInputTokens: number | null;
+}
+
+interface LlmLogEntry {
+  task: string;
+  model: string;
+  serviceTier: string;
+  responseFormat: 'json' | 'text';
+  messages: ChatMessage[];
+  output: string | null;
+  usage: LlmLogUsage | null;
+  error: string | null;
+  startedAt: string;
+  completedAt: string;
+  durationMs: number;
+}
+
+export async function writeLlmLog(entry: LlmLogEntry): Promise<void> {
+  await mkdir(llmLogDir, { recursive: true });
+  await writeFile(getLogPath(entry), formatLog(entry), 'utf8');
+}
+
+export function extractChatUsage(response: unknown): LlmLogUsage | null {
+  const usage = getObjectValue(response, 'usage');
+
+  if (!usage) {
+    return null;
+  }
+
+  const promptTokensDetails = getObjectValue(usage, 'prompt_tokens_details');
+
+  return {
+    inputTokens: getNumberValue(usage, 'prompt_tokens'),
+    outputTokens: getNumberValue(usage, 'completion_tokens'),
+    totalTokens: getNumberValue(usage, 'total_tokens'),
+    cachedInputTokens: promptTokensDetails ? getNumberValue(promptTokensDetails, 'cached_tokens') : null
+  };
+}
+
+function getLogPath(entry: LlmLogEntry): string {
+  return path.join(llmLogDir, `${toFileTimestamp(entry.startedAt)}-${slugify(entry.task)}.md`);
+}
+
+function formatLog(entry: LlmLogEntry): string {
+  return [
+    `# LLM Call: ${entry.task}`,
+    '',
+    `Started At: ${entry.startedAt}`,
+    `Completed At: ${entry.completedAt}`,
+    `Duration Ms: ${entry.durationMs}`,
+    `Model: ${entry.model}`,
+    `Service Tier: ${entry.serviceTier}`,
+    `Response Format: ${entry.responseFormat}`,
+    '',
+    '## Token Usage',
+    '',
+    `Input Tokens: ${entry.usage?.inputTokens ?? 'not reported'}`,
+    `Output Tokens: ${entry.usage?.outputTokens ?? 'not reported'}`,
+    `Total Tokens: ${entry.usage?.totalTokens ?? 'not reported'}`,
+    `Cached Input Tokens: ${entry.usage?.cachedInputTokens ?? 'not reported'}`,
+    '',
+    '## Thinking',
+    '',
+    'Hidden model reasoning is not exposed by the OpenAI API, so this log cannot include private chain-of-thought. Review the input, output, and token usage instead.',
+    '',
+    '## Input Messages',
+    '',
+    '```json',
+    JSON.stringify(entry.messages, null, 2),
+    '```',
+    '',
+    '## Output',
+    '',
+    '```text',
+    entry.output ?? '',
+    '```',
+    '',
+    '## Error',
+    '',
+    '```text',
+    entry.error ?? '',
+    '```',
+    ''
+  ].join('\n');
+}
+
+function getObjectValue(value: unknown, key: string): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const child = record[key];
+
+  return child && typeof child === 'object' ? (child as Record<string, unknown>) : null;
+}
+
+function getNumberValue(value: Record<string, unknown>, key: string): number | null {
+  const child = value[key];
+
+  return typeof child === 'number' ? child : null;
+}
+
+function toFileTimestamp(value: string): string {
+  return value.replace(/[:.]/g, '-');
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
