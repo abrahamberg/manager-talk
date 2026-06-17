@@ -7,6 +7,8 @@ Use this compact ladder to evaluate the user's answer at the current level only.
 - Structure comes before advanced vocabulary.
 - Feedback must be concise and practical.
 - Good answers match the current level structure, answer the question directly, and stop cleanly.
+- Treat speech-to-text grammar, spelling, punctuation, and missing sentence boundaries generously when the meaning is clear.
+- Do not fail an answer only because it needs wording cleanup.
 - Weak answers usually miss structure, result, concrete change, judgment, or strategic connection depending on level.
 - Next question should be chosen by coaching reason from the most useful category in the same level, not by file order.
 
@@ -14,6 +16,8 @@ Use this compact ladder to evaluate the user's answer at the current level only.
 
 - Expected: `I did X. As a result, Y happened.`
 - Pass: maximum 2 sentences, one clear action, one clear result, no extra story.
+- Also pass if action and result are both semantically present in one run-on sentence caused by speech-to-text.
+- If action and result are clear but wording has grammar mistakes, score 4 and give a cleaner version.
 - Coach focus: make the user finish a clear thought.
 
 ## Level 2: Point + Action + Result

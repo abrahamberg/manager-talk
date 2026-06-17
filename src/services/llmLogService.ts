@@ -68,15 +68,17 @@ function formatLog(entry: LlmLogEntry): string {
     `Total Tokens: ${entry.usage?.totalTokens ?? 'not reported'}`,
     `Cached Input Tokens: ${entry.usage?.cachedInputTokens ?? 'not reported'}`,
     '',
+    '## Task Summary',
+    '',
+    ...formatTaskSummary(entry.messages),
+    '',
     '## Thinking',
     '',
     'Hidden model reasoning is not exposed by the OpenAI API, so this log cannot include private chain-of-thought. Review the input, output, and token usage instead.',
     '',
     '## Input Messages',
     '',
-    '```json',
-    JSON.stringify(entry.messages, null, 2),
-    '```',
+    ...formatMessages(entry.messages),
     '',
     '## Output',
     '',
@@ -91,6 +93,52 @@ function formatLog(entry: LlmLogEntry): string {
     '```',
     ''
   ].join('\n');
+}
+
+function formatTaskSummary(messages: ChatMessage[]): string[] {
+  const taskMessage = messages.at(-1)?.content ?? '';
+  const fields = [
+    ['Task', extractLine(taskMessage, 'TASK')],
+    ['Level', extractLine(taskMessage, 'Level')],
+    ['Required Structure', extractLine(taskMessage, 'Required structure')],
+    ['Question', extractLine(taskMessage, 'Question')],
+    ['User Answer', extractBlockValue(taskMessage, 'User answer')],
+    ['Follow-up Question', extractLine(taskMessage, 'Follow-up question')]
+  ].filter(([, value]) => value);
+
+  if (fields.length === 0) {
+    return ['No task summary extracted.'];
+  }
+
+  return fields.map(([label, value]) => `- ${label}: ${value}`);
+}
+
+function formatMessages(messages: ChatMessage[]): string[] {
+  return messages.flatMap((message, index) => [
+    `### Message ${index + 1}: ${message.role}`,
+    '',
+    '```text',
+    message.content,
+    '```',
+    ''
+  ]);
+}
+
+function extractLine(content: string, label: string): string {
+  const match = content.match(new RegExp(`^${escapeRegExp(label)}:\\s*(.+)$`, 'im'));
+
+  return match?.[1]?.trim() ?? '';
+}
+
+function extractBlockValue(content: string, label: string): string {
+  const escapedLabel = escapeRegExp(label);
+  const match = content.match(new RegExp(`^${escapedLabel}:\\s*([\\s\\S]*?)(?:\\n\\n|$)`, 'im'));
+
+  return match?.[1]?.trim().replace(/\s+/g, ' ') ?? '';
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function getObjectValue(value: unknown, key: string): Record<string, unknown> | null {
