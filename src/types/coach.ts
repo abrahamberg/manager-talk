@@ -27,11 +27,9 @@ export interface CoachState {
   consecutiveGoodAnswers: number;
   currentQuestion: CurrentQuestion | null;
   questionsAskedAlready: AskedQuestion[];
-  recentEvaluations: string[];
 }
 
 export interface StaticCoachFiles {
-  definition: string;
   courseSchema: string;
   levelInputs: string;
   stateMarkdown: string;

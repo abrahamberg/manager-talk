@@ -4,12 +4,8 @@ import { constants } from 'node:fs';
 import { trainingDir } from '../config.js';
 import type { StaticCoachFiles } from '../types/coach.js';
 
-export async function readDefinition(): Promise<string> {
-  return readTrainingFile('defenetion.md');
-}
-
 export async function readCourseSchema(): Promise<string> {
-  return readTrainingFile('cource-echema.md');
+  return readTrainingFile('cource-echema-optimized.md');
 }
 
 export async function readLevelInputs(level: number): Promise<string> {
@@ -21,13 +17,12 @@ export async function readLevelInputs(level: number): Promise<string> {
 }
 
 export async function readStaticCoachFiles(level: number, stateMarkdown: string): Promise<StaticCoachFiles> {
-  const [definition, courseSchema, levelInputs] = await Promise.all([
-    readDefinition(),
+  const [courseSchema, levelInputs] = await Promise.all([
     readCourseSchema(),
     readLevelInputs(level)
   ]);
 
-  return { definition, courseSchema, levelInputs, stateMarkdown };
+  return { courseSchema, levelInputs, stateMarkdown };
 }
 
 export async function levelInputsExist(level: number): Promise<boolean> {

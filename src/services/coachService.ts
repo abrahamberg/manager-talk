@@ -180,8 +180,7 @@ function rewriteCompactState(state: CoachState, askedQuestion: AskedQuestion, ev
     currentStateSummary: evaluation.compactStateSummary,
     coachingFocus: evaluation.coachingFocus,
     improvementStrategy: evaluation.improvementStrategy,
-    questionsAskedAlready: upsertAskedQuestion(state.questionsAskedAlready, askedQuestion),
-    recentEvaluations: []
+    questionsAskedAlready: upsertAskedQuestion(state.questionsAskedAlready, askedQuestion)
   };
 }
 

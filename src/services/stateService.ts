@@ -41,16 +41,14 @@ export function parseState(markdown: string): CoachState {
     nextQuestionReason: parseNamedSection(markdown, 'Next Question Reason') || 'Start with a useful current-level practice question.',
     consecutiveGoodAnswers: parseConsecutiveGoodAnswers(markdown),
     currentQuestion: parseCurrentQuestion(markdown),
-    questionsAskedAlready: parseAskedQuestions(markdown),
-    recentEvaluations: parseRecentEvaluations(markdown)
+    questionsAskedAlready: parseAskedQuestions(markdown)
   };
 }
 
 export function serializeState(state: CoachState): string {
   return [
-    '# Communication Coach State',
-    '',
     `User Current Level: ${state.currentLevel}`,
+    '# Communication Coach State',
     '',
     'Current State Summary:',
     state.currentStateSummary,
@@ -84,13 +82,19 @@ export function createDefaultState(): CoachState {
     nextQuestionReason: 'Start with an easy daily-work question to establish the baseline.',
     consecutiveGoodAnswers: 0,
     currentQuestion: null,
-    questionsAskedAlready: [],
-    recentEvaluations: []
+    questionsAskedAlready: []
   };
 }
 
 function parseCurrentLevel(markdown: string): number {
-  return parseNumberAfterLabel(markdown, 'User Current Level') ?? 1;
+  return parseLevelFromFirstLine(markdown) ?? parseNumberAfterLabel(markdown, 'User Current Level') ?? 1;
+}
+
+function parseLevelFromFirstLine(markdown: string): number | null {
+  const firstLine = markdown.split('\n')[0] ?? '';
+  const match = firstLine.match(/^User Current Level\s*:\s*(\d+)$/i);
+
+  return match?.[1] ? Number(match[1]) : null;
 }
 
 function parseConsecutiveGoodAnswers(markdown: string): number {
@@ -189,20 +193,6 @@ function parseAskedQuestionRecord(record: string): AskedQuestion[] {
       askedAt: parseRecordField(record, 'Asked At') ?? new Date().toISOString()
     }
   ];
-}
-
-function parseRecentEvaluations(markdown: string): string[] {
-  const section = parseSectionText(markdown, 'Recent Evaluations:', undefined);
-
-  if (!section || section.includes('- none')) {
-    return [];
-  }
-
-  return section
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith('- '))
-    .map((line) => line.replace(/^- /, ''));
 }
 
 function parseNumberAfterLabel(markdown: string, label: string): number | null {

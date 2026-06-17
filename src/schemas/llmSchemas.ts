@@ -27,5 +27,4 @@ export const FeedbackEvaluationSchema = z.object({
   nextQuestion: QuestionSelectionSchema.nullable()
 });
 
-export type QuestionSelectionOutput = z.infer<typeof QuestionSelectionSchema>;
 export type FeedbackEvaluationOutput = z.infer<typeof FeedbackEvaluationSchema>;

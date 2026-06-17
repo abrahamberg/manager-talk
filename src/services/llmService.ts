@@ -1,14 +1,8 @@
 import OpenAI from 'openai';
 import { getOpenAiApiKey, openAiModel, openAiServiceTier } from '../config.js';
-import { FeedbackEvaluationSchema, QuestionSelectionSchema } from '../schemas/llmSchemas.js';
+import { FeedbackEvaluationSchema } from '../schemas/llmSchemas.js';
 import { extractChatUsage, writeLlmLog } from './llmLogService.js';
-import type { ChatMessage, FeedbackEvaluation, QuestionSelection } from '../types/coach.js';
-
-export async function selectQuestion(messages: ChatMessage[]): Promise<QuestionSelection> {
-  const json = await requestJson('select-question', messages);
-
-  return QuestionSelectionSchema.parse(json);
-}
+import type { ChatMessage, FeedbackEvaluation } from '../types/coach.js';
 
 export async function evaluateAnswer(messages: ChatMessage[]): Promise<FeedbackEvaluation> {
   const json = await requestJson('evaluate-answer', messages);

@@ -6,6 +6,7 @@ export const openAiServiceTier = parseOpenAiServiceTier(process.env.OPENAI_SERVI
 export const openAiTtsModel = process.env.OPENAI_TTS_MODEL ?? 'gpt-4o-mini-tts';
 export const openAiTtsVoice = process.env.OPENAI_TTS_VOICE ?? 'marin';
 export const trainingDir = process.env.TRAINING_DIR ?? '/workspaces/manager-talk';
+export const llmLogDir = `${trainingDir}/LLM_log`;
 
 type OpenAiServiceTier = 'auto' | 'default' | 'flex' | 'scale' | 'priority';
 

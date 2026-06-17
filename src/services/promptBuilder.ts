@@ -1,32 +1,24 @@
 import type { ChatMessage, QuestionSelection, RoundContext, StaticCoachFiles } from '../types/coach.js';
 
 const jsonSystemInstruction = [
-  'You are a communication coach.',
-  'Use only the provided product definition, course schema, current level input file, and state file as context.',
-  'Follow the current level criteria exactly; do not advance levels yourself.',
-  'Be concise, direct, and practical in user-facing text.',
+  'You are a communication coach for a level-based training app.',
+  'Your main job is to assess the user answer against the current level criteria, give concise feedback, update the compact state, and plan the next move.',
+  'For answer evaluation, return JSON that includes feedback, score, compact state summary, coaching focus, improvement strategy, and the next question selected by reasoning from the most useful category in the same level.',
+  'Do not choose by file order. Choose by what the user needs next, using the current state and asked-question history.',
+  'Use only the optimized course ladder, current level input file, compact state, and current user input provided below.',
+  'Follow the current level only; do not require higher-level skills early.',
+  'Keep user-facing feedback short and practical.',
   'Never reveal private reasoning.',
-  'Return only valid JSON with the requested keys. Do not include markdown, comments, or extra keys.'
+  'Return only valid JSON with the requested keys. No markdown, comments, or extra keys.'
 ].join(' ');
 
 const followUpSystemInstruction = [
-  'You are answering follow-up questions as a communication coach.',
-  'Use only the provided product definition, course schema, current level input file, state file, and current round context.',
-  'Be concise, direct, and practical.',
+  'You are a communication coach answering a follow-up question after feedback.',
+  'Answer the user question using the optimized course ladder, current level input file, compact state, and current round summary.',
+  'Be concise, direct, and practical; if useful, provide one improved example using the current level structure.',
   'Do not evaluate a new answer, select a new question, or update state in follow-up mode.',
   'Do not reveal private reasoning.'
 ].join(' ');
-
-export function buildQuestionSelectionMessages(files: StaticCoachFiles, duplicateWarning?: string): ChatMessage[] {
-  return [
-    { role: 'system', content: jsonSystemInstruction },
-    { role: 'user', content: wrapFileContent('defenetion.md', files.definition) },
-    { role: 'user', content: wrapFileContent('cource-echema.md', files.courseSchema) },
-    { role: 'user', content: wrapFileContent('inputs-levelX.md', files.levelInputs) },
-    { role: 'user', content: wrapFileContent('state.md', files.stateMarkdown) },
-    { role: 'user', content: buildQuestionSelectionTask(duplicateWarning) }
-  ];
-}
 
 export function buildFeedbackMessages(args: {
   files: StaticCoachFiles;
@@ -35,8 +27,7 @@ export function buildFeedbackMessages(args: {
 }): ChatMessage[] {
   return [
     { role: 'system', content: jsonSystemInstruction },
-    { role: 'user', content: wrapFileContent('defenetion.md', args.files.definition) },
-    { role: 'user', content: wrapFileContent('cource-echema.md', args.files.courseSchema) },
+    { role: 'user', content: wrapFileContent('cource-echema-optimized.md', args.files.courseSchema) },
     { role: 'user', content: wrapFileContent('inputs-levelX.md', args.files.levelInputs) },
     { role: 'user', content: wrapFileContent('state.md', args.files.stateMarkdown) },
     { role: 'user', content: buildFeedbackTask(args.question, args.answerText) }
@@ -50,40 +41,11 @@ export function buildFollowUpMessages(args: {
 }): ChatMessage[] {
   return [
     { role: 'system', content: followUpSystemInstruction },
-    { role: 'user', content: wrapFileContent('defenetion.md', args.files.definition) },
-    { role: 'user', content: wrapFileContent('cource-echema.md', args.files.courseSchema) },
+    { role: 'user', content: wrapFileContent('cource-echema-optimized.md', args.files.courseSchema) },
     { role: 'user', content: wrapFileContent('inputs-levelX.md', args.files.levelInputs) },
     { role: 'user', content: wrapFileContent('state.md', args.files.stateMarkdown) },
     { role: 'user', content: buildFollowUpTask(args.roundContext, args.message) }
   ];
-}
-
-function buildQuestionSelectionTask(duplicateWarning?: string): string {
-  return [
-    'TASK: Choose the next training question.',
-    '',
-    'Context available above, in cache-friendly order:',
-    '1. defenetion.md: product rules.',
-    '2. cource-echema.md: level goals, structure, pass criteria, and vocabulary.',
-    '3. inputs-levelX.md: the only valid question bank for the current level.',
-    '4. state.md: current user progress, active question, and asked questions.',
-    '',
-    duplicateWarning ? `RETRY WARNING: ${duplicateWarning}` : '',
-    '',
-    'Rules:',
-    '- Select exactly one question for the current User Current Level in state.md.',
-    '- The questionText must be copied from inputs-levelX.md exactly unless this is a valid intentional repeat.',
-    '- Do not invent or reword questions.',
-    '- Do not select a question already listed in state.md unless isIntentionalRepeat is true and the previous evaluation needs improvement.',
-    '- answerFormatSummary must tell the user exactly how to answer at this level in one short instruction.',
-    '- expectedPattern must be the current level answer structure.',
-    '- reasonForSelection is for state/debugging; keep it one sentence.',
-    '',
-    'Return this JSON object exactly:',
-    '{"level":1,"questionId":"level1-category-001","questionText":"Question?","answerFormatSummary":"Short format instruction.","expectedPattern":"Expected answer pattern.","reasonForSelection":"Why this question now.","isIntentionalRepeat":false}'
-  ]
-    .filter(Boolean)
-    .join('\n');
 }
 
 function buildFeedbackTask(question: QuestionSelection, answerText: string): string {
@@ -91,10 +53,9 @@ function buildFeedbackTask(question: QuestionSelection, answerText: string): str
     'TASK: Evaluate the user answer and produce concise coaching feedback.',
     '',
     'Context available above, in cache-friendly order:',
-    '1. defenetion.md: product rules.',
-    '2. cource-echema.md: level goals, structure, pass criteria, examples, and vocabulary.',
-    '3. inputs-levelX.md: current level question bank and coach instructions.',
-    '4. state.md: current user progress and active question.',
+    '1. optimized course ladder: level goals, structures, pass criteria, vocabulary guidance.',
+    '2. inputs-levelX.md: current level question bank and coach instructions.',
+    '3. state.md: compact progress, focus, strategy, active question, asked questions.',
     '',
     'Current evaluated item:',
     `Question ID: ${question.questionId}`,
@@ -132,10 +93,9 @@ function buildFollowUpTask(roundContext: RoundContext, message: string): string 
     'TASK: Answer a follow-up question after feedback.',
     '',
     'Context available above, in cache-friendly order:',
-    '1. defenetion.md: product rules.',
-    '2. cource-echema.md: level goals, structure, pass criteria, examples, and vocabulary.',
-    '3. inputs-levelX.md: current level coach instruction.',
-    '4. state.md: current user progress.',
+    '1. optimized course ladder: level goals, structures, pass criteria, vocabulary guidance.',
+    '2. inputs-levelX.md: current level coach instruction.',
+    '3. state.md: compact current progress.',
     '',
     'Current round context:',
     `Level: ${roundContext.level}`,

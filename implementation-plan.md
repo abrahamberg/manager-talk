@@ -106,9 +106,8 @@ Keep `state.md` human-readable, structured, and compact. Rewrite it after each e
 Use this exact format:
 
 ```md
-# Communication Coach State
-
 User Current Level: 1
+# Communication Coach State
 
 Current State Summary:
 The user is starting Level 1. No evaluated answers yet.
@@ -180,7 +179,7 @@ For every LLM request, order messages/content like this:
 
 1. Static system instruction.
 2. Static product rules from `defenetion.md`.
-3. Static course schema from `cource-echema.md`.
+3. Optimized course schema from `cource-echema-optimized.md`.
 4. Current level file, for example `inputs-level4.md`.
 5. Current dynamic state from `state.md`.
 6. Current user-specific data for this request, such as answer text or follow-up question.
@@ -189,8 +188,10 @@ The user specifically asked that state comes last and the current level input co
 
 1. Put stable files in the main prompt in cache-friendly order.
 2. Put `inputs-levelX.md` immediately before the state block.
-3. Put `state.md` as the last file-content block.
+3. Put compact `state.md` as the last file-content block.
 4. Put the user's immediate answer or follow-up question after the state as a short final user message.
+
+Do not inject full `defenetion.md` or full `cource-echema.md` into normal LLM calls. Their stable product rules should be summarized in the system prompt and the compact ladder should come from `cource-echema-optimized.md`.
 
 Do not place `state.md` before stable files.
 
