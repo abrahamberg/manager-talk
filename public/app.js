@@ -21,6 +21,8 @@ let roundContext = null;
 let recognition = null;
 let isListening = false;
 let lastCoachMessage = '';
+let currentAudio = null;
+let currentAudioUrl = null;
 
 formEl.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -205,9 +207,9 @@ function setupSpeechTools() {
 }
 
 function setupSpeechSynthesisControls() {
-  replayButtonEl.disabled = !canSpeakText;
-  stopSpeakingButtonEl.disabled = !canSpeakText;
-  autoSpeakToggleEl.disabled = !canSpeakText;
+  replayButtonEl.disabled = false;
+  stopSpeakingButtonEl.disabled = false;
+  autoSpeakToggleEl.disabled = false;
 }
 
 function setupSpeechRecognition() {
@@ -271,52 +273,106 @@ function stopListeningUi() {
   updateSpeechStatus();
 }
 
-function speakTextIfEnabled(text) {
+async function speakTextIfEnabled(text) {
   if (!autoSpeakToggleEl.checked) {
     return;
   }
 
-  speakText(text);
+  await speakText(text);
 }
 
-function speakText(text) {
-  if (!canSpeakText || !text) {
+async function speakText(text) {
+  if (!text) {
     return;
   }
 
   stopSpeaking();
 
+  try {
+    await playPremiumSpeech(text);
+  } catch {
+    speakWithBrowserFallback(text);
+  }
+}
+
+async function playPremiumSpeech(text) {
+  setSpeechStatus('Generating premium coach voice...');
+
+  const response = await fetch('/api/speech', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
+  });
+
+  if (!response.ok) {
+    throw new Error('Premium speech failed.');
+  }
+
+  const audioBlob = await response.blob();
+  currentAudioUrl = URL.createObjectURL(audioBlob);
+  currentAudio = new Audio(currentAudioUrl);
+  currentAudio.addEventListener('ended', clearCurrentAudio);
+  currentAudio.addEventListener('error', clearCurrentAudio);
+
+  await currentAudio.play();
+  setSpeechStatus('Playing premium coach voice.');
+}
+
+function speakWithBrowserFallback(text) {
+  if (!canSpeakText) {
+    setSpeechStatus('Premium voice failed and browser text-to-speech is unavailable.');
+    return;
+  }
+
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'en-US';
   utterance.rate = 0.95;
   utterance.pitch = 1;
+  utterance.addEventListener('end', updateSpeechStatus);
 
   window.speechSynthesis.speak(utterance);
+  setSpeechStatus('Premium voice unavailable. Playing browser fallback voice.');
 }
 
 function stopSpeaking() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+  }
+
+  clearCurrentAudio();
+
   if (canSpeakText) {
     window.speechSynthesis.cancel();
   }
 }
 
+function clearCurrentAudio() {
+  currentAudio = null;
+
+  if (currentAudioUrl) {
+    URL.revokeObjectURL(currentAudioUrl);
+    currentAudioUrl = null;
+  }
+}
+
 function updateSpeechStatus() {
   if (canSpeakText && canRecognizeSpeech) {
-    setSpeechStatus('Voice input and coach audio are available.');
+    setSpeechStatus('Premium coach voice is available when OPENAI_API_KEY is set. Voice input is available.');
     return;
   }
 
   if (canSpeakText) {
-    setSpeechStatus('Coach audio is available. Speech-to-text is not supported in this browser.');
+    setSpeechStatus('Premium coach voice is available when OPENAI_API_KEY is set. Speech-to-text is not supported in this browser.');
     return;
   }
 
   if (canRecognizeSpeech) {
-    setSpeechStatus('Voice input is available. Text-to-speech is not supported in this browser.');
+    setSpeechStatus('Premium coach voice is available when OPENAI_API_KEY is set. Voice input is available.');
     return;
   }
 
-  setSpeechStatus('Speech tools are not supported in this browser. Try Chrome or Edge.');
+  setSpeechStatus('Premium coach voice is available when OPENAI_API_KEY is set. Speech-to-text may need Chrome or Edge.');
 }
 
 function setSpeechStatus(message) {

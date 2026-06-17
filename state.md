@@ -8,9 +8,11 @@ User gave a good Level 1 answer with clear action and result, but the wording ne
 Consecutive Good Answers: 1
 
 Current Question:
-- ID: none
-- Text: none
-- Asked At: none
+- ID: level1-daily-work-003
+- Text: How do you prepare for a meeting?
+- Answer Format Summary: Answer in two short sentences: what you did, then what happened as a result.
+- Expected Pattern: I [action]. As a result, [result].
+- Asked At: 2026-06-17T18:52:15.227Z
 - Repeat Intentional: false
 
 Questions Asked Already:

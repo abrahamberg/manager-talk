@@ -7,6 +7,7 @@ import { errorHandler } from './routes/errorHandler.js';
 import { followUpRoutes } from './routes/followUpRoutes.js';
 import { questionRoutes } from './routes/questionRoutes.js';
 import { sessionRoutes } from './routes/sessionRoutes.js';
+import { speechRoutes } from './routes/speechRoutes.js';
 import { ensureStateFile } from './services/stateService.js';
 
 const app = express();
@@ -18,6 +19,7 @@ app.use('/api', sessionRoutes);
 app.use('/api', questionRoutes);
 app.use('/api', answerRoutes);
 app.use('/api', followUpRoutes);
+app.use('/api', speechRoutes);
 app.use(errorHandler);
 
 await ensureStateFile();

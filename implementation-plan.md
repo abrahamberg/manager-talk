@@ -472,6 +472,8 @@ Required:
 OPENAI_API_KEY=your_api_key
 OPENAI_MODEL=gpt-4.1-mini
 OPENAI_SERVICE_TIER=flex
+OPENAI_TTS_MODEL=gpt-4o-mini-tts
+OPENAI_TTS_VOICE=marin
 PORT=3000
 TRAINING_DIR=/Users/daniel.abrahamberg/Abrahamberg/Training
 ```

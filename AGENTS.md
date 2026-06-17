@@ -16,6 +16,7 @@
 - Preserve prompt caching order in LLM calls: stable instructions first, `inputs-levelX.md` second last among file-content blocks, `state.md` last among file-content blocks.
 - Keep task-specific prompt text after the file-content blocks so cached static context stays stable.
 - LLM calls default to `OPENAI_SERVICE_TIER=flex`; preserve that unless there is a concrete reason to change it.
+- Coach text-to-speech uses OpenAI TTS by default: `OPENAI_TTS_MODEL=gpt-4o-mini-tts`, `OPENAI_TTS_VOICE=marin`.
 - Use two separate LLM flows: one to choose the next question and one to evaluate feedback. Follow-up questions after feedback must not update `state.md`.
 - Enforce duplicate-question prevention in code, even if the LLM selects a duplicate.
 
