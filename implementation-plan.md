@@ -282,7 +282,7 @@ Rules for feedback:
 5. If answer is bad, explain the issue and provide a corrected version.
 6. Always adapt the feedback to the actual user answer.
 7. Do not praise vague or rambling answers as good.
-8. Do not move levels based on one answer. Movement depends on 5 good answers in a row.
+8. Do not move levels based on one answer. Movement depends on 5 good answers in a row, and at least 2 question from each category is answered correcly.
 
 Score rules:
 

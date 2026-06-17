@@ -1,26 +1,26 @@
-User Current Level: 1
+User Current Level: 3
 # Communication Coach State
 
 Current State Summary:
-User is passing Level 1 with action-result answers, but needs cleaner sentence boundaries and shorter wording.
+Level 3 is working: the user can give a short Problem-Action-Result story with clear action and result, but the problem and result should be stated more cleanly.
 
 Coaching Focus:
-Keep the action and result separate and simple.
+Make the problem and result specific and easy to follow.
 
 Improvement Strategy:
-Practice another daily-work question to reinforce short, clear action-result structure.
+Practice short prioritization stories so the user keeps the problem, action, and result separate and clear.
 
 Next Question Reason:
-Fallback selected an unused team-communication question based on current coaching focus.
+Conflict and disagreement is the next useful Level 3 category because it practices the same short story structure while helping the user make the problem and result even clearer.
 
-Consecutive Good Answers: 1
+Consecutive Good Answers: 2
 
 Current Question:
-- ID: level1-team-communication-002
-- Text: How do you share updates with others?
-- Answer Format Summary: Answer in two sentences only. First sentence: what you did. Second sentence: what happened as a result.
-- Expected Pattern: I did X. As a result, Y happened.
-- Asked At: 2026-06-17T21:56:53.489Z
+- ID: level3-conflict-and-disagreement-001
+- Text: Tell me about a time two people disagreed.
+- Answer Format Summary: Answer with a short story. First say the problem, then what you did, then the result. Keep it to 3–5 sentences.
+- Expected Pattern: The problem was X. I did Y. As a result, Z happened.
+- Asked At: 2026-06-17T22:55:21.976Z
 - Repeat Intentional: false
 
 Questions Asked Already:
@@ -35,3 +35,17 @@ Questions Asked Already:
 - level1-daily-work-008 | 1 | good | How do you handle urgent work? | User is passing Level 1 with clear action-result answers; keep practicing shorter, cleaner result sentences.
 - level1-daily-work-009 | 1 | needs_improvement | How do you avoid distractions? | User is close to passing Level 1, but needs cleaner two-sentence action-result answers with clearer wording.
 - level1-daily-work-010 | 1 | good | How do you finish work on time? | User is passing Level 1 with action-result answers, but needs cleaner sentence boundaries and shorter wording.
+- level1-team-communication-002 | 1 | needs_improvement | How do you share updates with others? | User is close to passing Level 1; action is clear, but result sentences still need to be complete and separate.
+- level1-team-communication-003 | 1 | good | How do you ask for help? | User is passing Level 1; action-result structure is clear, and the main need is a shorter, complete result sentence.
+- level1-team-communication-004 | 1 | good | How do you help someone who is blocked? | User is passing Level 1 with clear action-result answers; result sentences should stay short and complete.
+- level1-team-communication-005 | 1 | good | How do you make sure people understand your message? | User is passing Level 1 with clear action-result answers; keep the result sentence short and complete.
+- level1-team-communication-006 | 1 | good | How do you communicate progress? | User is passing Level 1 with clear action-result answers; keep the result sentence short, complete, and easy to follow.
+- level1-team-communication-007 | 1 | good | How do you tell the team something changed? | User is passing Level 1 with clear action-result answers; keep practicing short, clean result sentences.
+- level2-prioritization-001 | 2 | good | How do you handle too many tasks? | Level 2 started; user can state a main point and action, but needs cleaner 3-sentence Point-Action-Result structure.
+- level2-alignment-001 | 2 | good | How do you make sure your team is aligned? | User is passing Level 2 basics and can state point and action; needs cleaner 3-sentence structure with a clearer result.
+- level2-alignment-002 | 2 | good | How do you make sure people understand priorities? | User is passing Level 2 basics and can state point and action; needs a clearer result sentence to complete the 3-part structure.
+- level2-communication-001 | 2 | good | How do you communicate clearly? | User is passing Level 2 basics and can state point and action; needs a clearer result sentence to complete the 3-part structure.
+- level2-prioritization-002 | 2 | good | How do you decide what to work on first? | User is passing Level 2 basics and can state point and action clearly; result sentences are improving but still need to be more explicit.
+- level3-general-001 | 3 | needs_improvement | What the problem was | Level 3 baseline is weak because the user did not answer with a story yet. They need practice naming a problem, then action, then result.
+- level3-improving-ways-of-working-002 | 3 | good | Tell me about a time you changed a team process. | Level 3 is starting to work: the user can give a short Problem-Action-Result story with clear action and result.
+- level3-alignment-and-prioritization-002 | 3 | good | Tell me about a time priorities were unclear. | Level 3 is working: the user can give a short Problem-Action-Result story with clear action and result, but the problem and result should be stated more cleanly
