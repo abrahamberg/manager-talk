@@ -16,12 +16,25 @@
           <span>Answer format</span>
           <p id="format">Loading format...</p>
         </div>
+        <div class="speech-card">
+          <span>Speech</span>
+          <label class="speech-toggle">
+            <input id="auto-speak-toggle" type="checkbox" checked />
+            Read coach messages aloud
+          </label>
+          <p id="speech-status">Speech tools are loading...</p>
+        </div>
       </section>
 
       <section class="chat-card">
         <div id="messages" class="messages"></div>
+        <div class="speech-actions">
+          <button id="replay-button" class="secondary-button" type="button">Replay coach</button>
+          <button id="stop-speaking-button" class="secondary-button" type="button">Stop voice</button>
+        </div>
         <form id="chat-form" class="composer">
           <textarea id="message-input" rows="3" placeholder="Type your answer"></textarea>
+          <button id="mic-button" class="mic-button" type="button">Speak</button>
           <button id="submit-button" type="submit">Send</button>
         </form>
         <button id="next-button" class="next-button" type="button" hidden>Next question</button>

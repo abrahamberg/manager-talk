@@ -1,7 +1,13 @@
 import { readStaticCoachFiles, levelInputsExist, readLevelInputs } from './courseFileService.js';
 import { evaluateAnswer, selectQuestion, answerFollowUp } from './llmService.js';
 import { buildFeedbackMessages, buildFollowUpMessages, buildQuestionSelectionMessages } from './promptBuilder.js';
-import { chooseFallbackQuestion, extractAnswerFormatSummary, extractExpectedPattern, isDuplicateQuestion } from './questionBankService.js';
+import {
+  chooseFallbackQuestion,
+  extractAnswerFormatSummary,
+  extractExpectedPattern,
+  isDuplicateQuestion,
+  normalizeSelectionFromLevelFile
+} from './questionBankService.js';
 import { readState, readStateMarkdown, writeState } from './stateService.js';
 import type { AnswerRequest, FollowUpRequest } from '../schemas/apiSchemas.js';
 import type { AskedQuestion, CoachState, FeedbackEvaluation, QuestionSelection } from '../types/coach.js';
@@ -41,7 +47,7 @@ export async function submitAnswer(input: AnswerRequest) {
 
   const stateMarkdown = await readStateMarkdown();
   const files = await readStaticCoachFiles(state.currentLevel, stateMarkdown);
-  const question = buildQuestionFromInput(input);
+  const question = buildQuestionFromState(state);
   const messages = buildFeedbackMessages({ files, question, answerText: input.answerText });
   const evaluation = await evaluateAnswer(messages);
   const updatedState = await applyEvaluation(state, evaluation);
@@ -77,19 +83,33 @@ export async function submitFollowUp(input: FollowUpRequest) {
 
 async function chooseNonDuplicateQuestion(files: Awaited<ReturnType<typeof readStaticCoachFiles>>, state: CoachState): Promise<QuestionSelection> {
   const firstSelection = await selectQuestion(buildQuestionSelectionMessages(files));
+  const firstValidSelection = normalizeSelectionFromLevelFile(firstSelection, files.levelInputs, state);
 
-  if (!isDuplicateQuestion(firstSelection, state)) {
-    return firstSelection;
+  if (firstValidSelection && !isDuplicateQuestion(firstValidSelection, state)) {
+    return firstValidSelection;
   }
 
-  const duplicateWarning = 'The selected question was already asked. Select a different unused question from the current level file.';
+  const duplicateWarning = buildSelectionRetryWarning(firstSelection, firstValidSelection, state);
   const secondSelection = await selectQuestion(buildQuestionSelectionMessages(files, duplicateWarning));
+  const secondValidSelection = normalizeSelectionFromLevelFile(secondSelection, files.levelInputs, state);
 
-  if (!isDuplicateQuestion(secondSelection, state)) {
-    return secondSelection;
+  if (secondValidSelection && !isDuplicateQuestion(secondValidSelection, state)) {
+    return secondValidSelection;
   }
 
   return chooseFallbackQuestion(files.levelInputs, state);
+}
+
+function buildSelectionRetryWarning(selection: QuestionSelection, validSelection: QuestionSelection | null, state: CoachState): string {
+  if (!validSelection) {
+    return `The selected question is not an exact question from inputs-level${state.currentLevel}.md. Select an unused question from that file only.`;
+  }
+
+  if (isDuplicateQuestion(validSelection, state)) {
+    return 'The selected question was already asked. Select a different unused question from the current level file.';
+  }
+
+  return `The selected question was invalid: ${selection.questionText}`;
 }
 
 function questionFromCurrentState(state: CoachState, levelInputs: string): QuestionSelection {
@@ -103,8 +123,8 @@ function questionFromCurrentState(state: CoachState, levelInputs: string): Quest
     level: state.currentLevel,
     questionId: question.id,
     questionText: question.text,
-    answerFormatSummary: extractAnswerFormatSummary(levelInputs),
-    expectedPattern: extractExpectedPattern(levelInputs),
+    answerFormatSummary: question.answerFormatSummary ?? extractAnswerFormatSummary(levelInputs),
+    expectedPattern: question.expectedPattern ?? extractExpectedPattern(levelInputs),
     reasonForSelection: 'Returning the current unanswered question.',
     isIntentionalRepeat: question.repeatIntentional
   };
@@ -116,6 +136,8 @@ function rememberCurrentQuestion(state: CoachState, selection: QuestionSelection
     currentQuestion: {
       id: selection.questionId,
       text: selection.questionText,
+      answerFormatSummary: selection.answerFormatSummary,
+      expectedPattern: selection.expectedPattern,
       askedAt: new Date().toISOString(),
       repeatIntentional: selection.isIntentionalRepeat
     }
@@ -132,15 +154,21 @@ function ensureAnswerMatchesState(input: AnswerRequest, state: CoachState): void
   }
 }
 
-function buildQuestionFromInput(input: AnswerRequest): QuestionSelection {
+function buildQuestionFromState(state: CoachState): QuestionSelection {
+  const question = state.currentQuestion;
+
+  if (!question) {
+    throw new StaleQuestionError('No active question. Request the next question first.');
+  }
+
   return {
-    level: input.level,
-    questionId: input.questionId,
-    questionText: input.questionText,
-    answerFormatSummary: 'Use the expected structure for the current level.',
-    expectedPattern: 'Use the current level structure.',
+    level: state.currentLevel,
+    questionId: question.id,
+    questionText: question.text,
+    answerFormatSummary: question.answerFormatSummary ?? 'Use the expected structure for the current level.',
+    expectedPattern: question.expectedPattern ?? 'Use the current level structure.',
     reasonForSelection: 'Question submitted for evaluation.',
-    isIntentionalRepeat: false
+    isIntentionalRepeat: question.repeatIntentional
   };
 }
 

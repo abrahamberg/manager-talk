@@ -34,6 +34,25 @@ export function chooseFallbackQuestion(levelInputs: string, state: CoachState): 
   };
 }
 
+export function normalizeSelectionFromLevelFile(selection: QuestionSelection, levelInputs: string, state: CoachState): QuestionSelection | null {
+  if (isValidIntentionalRepeat(selection, state)) {
+    return selection;
+  }
+
+  const matchingQuestion = findMatchingLevelQuestion(selection, levelInputs, state.currentLevel);
+
+  if (!matchingQuestion) {
+    return null;
+  }
+
+  return {
+    ...selection,
+    level: state.currentLevel,
+    questionId: matchingQuestion.id,
+    questionText: matchingQuestion.text
+  };
+}
+
 export function findQuestionById(levelInputs: string, level: number, questionId: string): ParsedQuestion | null {
   return parseLevelQuestions(levelInputs, level).find((question) => question.id === questionId) ?? null;
 }
@@ -62,6 +81,27 @@ export function extractExpectedPattern(levelInputs: string): string {
 
 export function normalizeQuestionText(text: string): string {
   return text.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function findMatchingLevelQuestion(selection: QuestionSelection, levelInputs: string, level: number): ParsedQuestion | null {
+  const questions = parseLevelQuestions(levelInputs, level);
+  const normalizedSelectionText = normalizeQuestionText(selection.questionText);
+
+  return (
+    questions.find((question) => question.id === selection.questionId) ??
+    questions.find((question) => normalizeQuestionText(question.text) === normalizedSelectionText) ??
+    null
+  );
+}
+
+function isValidIntentionalRepeat(selection: QuestionSelection, state: CoachState): boolean {
+  if (!selection.isIntentionalRepeat) {
+    return false;
+  }
+
+  const askedQuestion = findAskedQuestion(selection, state.questionsAskedAlready);
+
+  return askedQuestion?.evaluation === 'needs_improvement';
 }
 
 function findAskedQuestion(selection: QuestionSelection, askedQuestions: AskedQuestion[]): AskedQuestion | null {
@@ -95,7 +135,7 @@ function parseLevelQuestions(levelInputs: string, level: number): ParsedQuestion
       continue;
     }
 
-    const questionMatch = line.match(/^\s*(\d+)\.\s+(.+\?)\s*$/);
+    const questionMatch = line.match(/^\s*(\d+)\.\s+(.+)\s*$/);
 
     if (!questionMatch?.[1] || !questionMatch[2]) {
       continue;

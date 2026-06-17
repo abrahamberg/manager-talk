@@ -3,6 +3,8 @@ export type EvaluationValue = 'good' | 'needs_improvement' | 'repeated_for_pract
 export interface CurrentQuestion {
   id: string;
   text: string;
+  answerFormatSummary: string | null;
+  expectedPattern: string | null;
   askedAt: string;
   repeatIntentional: boolean;
 }

@@ -471,6 +471,7 @@ Required:
 ```text
 OPENAI_API_KEY=your_api_key
 OPENAI_MODEL=gpt-4.1-mini
+OPENAI_SERVICE_TIER=flex
 PORT=3000
 TRAINING_DIR=/Users/daniel.abrahamberg/Abrahamberg/Training
 ```
@@ -704,6 +705,7 @@ Recommended OpenAI call pattern:
 2. Otherwise use Chat Completions.
 3. Set temperature low, for example `0.2`, for evaluation consistency.
 4. Use a model from `OPENAI_MODEL`.
+5. Use `OPENAI_SERVICE_TIER`, defaulting to `flex` when supported by the SDK/model.
 
 ### Step 9: Implement Coach Service
 

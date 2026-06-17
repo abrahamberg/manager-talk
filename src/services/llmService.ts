@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { getOpenAiApiKey, openAiModel } from '../config.js';
+import { getOpenAiApiKey, openAiModel, openAiServiceTier } from '../config.js';
 import { FeedbackEvaluationSchema, QuestionSelectionSchema } from '../schemas/llmSchemas.js';
 import type { ChatMessage, FeedbackEvaluation, QuestionSelection } from '../types/coach.js';
 
@@ -38,6 +38,7 @@ async function requestText(messages: ChatMessage[], options: { json?: boolean } 
     model: openAiModel,
     temperature: 0.2,
     messages,
+    service_tier: openAiServiceTier,
     response_format: options.json ? { type: 'json_object' } : undefined
   });
 

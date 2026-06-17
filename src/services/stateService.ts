@@ -98,6 +98,8 @@ function parseStateSummary(markdown: string): string {
 function parseCurrentQuestion(markdown: string): CurrentQuestion | null {
   const id = parseCurrentQuestionField(markdown, 'ID');
   const text = parseCurrentQuestionField(markdown, 'Text');
+  const answerFormatSummary = parseCurrentQuestionField(markdown, 'Answer Format Summary');
+  const expectedPattern = parseCurrentQuestionField(markdown, 'Expected Pattern');
   const askedAt = parseCurrentQuestionField(markdown, 'Asked At');
   const repeatIntentional = parseCurrentQuestionField(markdown, 'Repeat Intentional') === 'true';
 
@@ -108,6 +110,8 @@ function parseCurrentQuestion(markdown: string): CurrentQuestion | null {
   return {
     id,
     text,
+    answerFormatSummary: answerFormatSummary && answerFormatSummary !== 'none' ? answerFormatSummary : null,
+    expectedPattern: expectedPattern && expectedPattern !== 'none' ? expectedPattern : null,
     askedAt: askedAt && askedAt !== 'none' ? askedAt : new Date().toISOString(),
     repeatIntentional
   };
@@ -211,12 +215,21 @@ function parseEvaluationValue(value: string | null): EvaluationValue {
 
 function serializeCurrentQuestion(question: CurrentQuestion | null): string[] {
   if (!question) {
-    return ['- ID: none', '- Text: none', '- Asked At: none', '- Repeat Intentional: false'];
+    return [
+      '- ID: none',
+      '- Text: none',
+      '- Answer Format Summary: none',
+      '- Expected Pattern: none',
+      '- Asked At: none',
+      '- Repeat Intentional: false'
+    ];
   }
 
   return [
     `- ID: ${question.id}`,
     `- Text: ${question.text}`,
+    `- Answer Format Summary: ${question.answerFormatSummary ?? 'none'}`,
+    `- Expected Pattern: ${question.expectedPattern ?? 'none'}`,
     `- Asked At: ${question.askedAt}`,
     `- Repeat Intentional: ${question.repeatIntentional}`
   ];

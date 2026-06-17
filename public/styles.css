@@ -54,14 +54,20 @@ h1 {
   font-weight: 700;
 }
 
-.format-card {
+.format-card,
+.speech-card {
   margin-top: 24px;
   padding: 18px;
   border-radius: 18px;
   background: #e7f0df;
 }
 
-.format-card span {
+.speech-card {
+  background: #efe2c4;
+}
+
+.format-card span,
+.speech-card span {
   display: block;
   margin-bottom: 8px;
   font-size: 12px;
@@ -69,8 +75,17 @@ h1 {
   text-transform: uppercase;
 }
 
-.format-card p {
+.format-card p,
+.speech-card p {
   margin: 0;
+}
+
+.speech-toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+  font-weight: 700;
 }
 
 .chat-card {
@@ -110,9 +125,16 @@ h1 {
 
 .composer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 12px;
   padding-top: 16px;
+}
+
+.speech-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 12px;
 }
 
 textarea {
@@ -140,6 +162,15 @@ button {
 button:disabled {
   cursor: wait;
   opacity: 0.6;
+}
+
+.secondary-button,
+.mic-button {
+  background: #51635d;
+}
+
+.mic-button.is-listening {
+  background: #b83232;
 }
 
 .next-button {

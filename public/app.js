@@ -5,10 +5,22 @@ const formEl = document.querySelector('#chat-form');
 const inputEl = document.querySelector('#message-input');
 const submitButtonEl = document.querySelector('#submit-button');
 const nextButtonEl = document.querySelector('#next-button');
+const micButtonEl = document.querySelector('#mic-button');
+const replayButtonEl = document.querySelector('#replay-button');
+const stopSpeakingButtonEl = document.querySelector('#stop-speaking-button');
+const autoSpeakToggleEl = document.querySelector('#auto-speak-toggle');
+const speechStatusEl = document.querySelector('#speech-status');
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const canSpeakText = 'speechSynthesis' in window;
+const canRecognizeSpeech = Boolean(SpeechRecognition);
 
 let mode = 'answering';
 let currentQuestion = null;
 let roundContext = null;
+let recognition = null;
+let isListening = false;
+let lastCoachMessage = '';
 
 formEl.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -28,8 +40,22 @@ formEl.addEventListener('submit', async (event) => {
 });
 
 nextButtonEl.addEventListener('click', async () => {
-  await loadNextQuestion(true);
+  await loadNextQuestion(false);
 });
+
+micButtonEl.addEventListener('click', () => {
+  toggleSpeechRecognition();
+});
+
+replayButtonEl.addEventListener('click', () => {
+  speakText(lastCoachMessage);
+});
+
+stopSpeakingButtonEl.addEventListener('click', () => {
+  stopSpeaking();
+});
+
+setupSpeechTools();
 
 await startSession();
 
@@ -93,7 +119,7 @@ async function submitAnswer(answerText) {
 
 async function submitFollowUp(message) {
   if (message.toLowerCase() === 'next') {
-    await loadNextQuestion(true);
+    await loadNextQuestion(false);
     return;
   }
 
@@ -105,7 +131,7 @@ async function submitFollowUp(message) {
     const response = await apiPost('/api/follow-up', { roundContext, message });
 
     if (response.next) {
-      await loadNextQuestion(true);
+      await loadNextQuestion(false);
       return;
     }
 
@@ -159,11 +185,142 @@ function addMessage(role, content) {
   messageEl.textContent = content;
   messagesEl.append(messageEl);
   messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  if (role === 'coach') {
+    lastCoachMessage = content;
+    speakTextIfEnabled(content);
+  }
 }
 
 function setBusy(isBusy) {
   submitButtonEl.disabled = isBusy;
   nextButtonEl.disabled = isBusy;
+  micButtonEl.disabled = isBusy || !canRecognizeSpeech;
+}
+
+function setupSpeechTools() {
+  setupSpeechSynthesisControls();
+  setupSpeechRecognition();
+  updateSpeechStatus();
+}
+
+function setupSpeechSynthesisControls() {
+  replayButtonEl.disabled = !canSpeakText;
+  stopSpeakingButtonEl.disabled = !canSpeakText;
+  autoSpeakToggleEl.disabled = !canSpeakText;
+}
+
+function setupSpeechRecognition() {
+  micButtonEl.disabled = !canRecognizeSpeech;
+
+  if (!canRecognizeSpeech) {
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = true;
+  recognition.continuous = false;
+
+  recognition.addEventListener('result', handleSpeechResult);
+  recognition.addEventListener('end', stopListeningUi);
+  recognition.addEventListener('error', handleSpeechError);
+}
+
+function toggleSpeechRecognition() {
+  if (!recognition) {
+    setSpeechStatus('Speech-to-text is not supported in this browser.');
+    return;
+  }
+
+  if (isListening) {
+    recognition.stop();
+    return;
+  }
+
+  startListening();
+}
+
+function startListening() {
+  stopSpeaking();
+  isListening = true;
+  micButtonEl.textContent = 'Listening...';
+  micButtonEl.classList.add('is-listening');
+  setSpeechStatus('Listening. Speak your answer now.');
+  recognition.start();
+}
+
+function handleSpeechResult(event) {
+  const transcript = Array.from(event.results)
+    .map((result) => result[0]?.transcript ?? '')
+    .join('')
+    .trim();
+
+  inputEl.value = transcript;
+}
+
+function handleSpeechError(event) {
+  stopListeningUi();
+  setSpeechStatus(`Speech-to-text stopped: ${event.error}.`);
+}
+
+function stopListeningUi() {
+  isListening = false;
+  micButtonEl.textContent = 'Speak';
+  micButtonEl.classList.remove('is-listening');
+  updateSpeechStatus();
+}
+
+function speakTextIfEnabled(text) {
+  if (!autoSpeakToggleEl.checked) {
+    return;
+  }
+
+  speakText(text);
+}
+
+function speakText(text) {
+  if (!canSpeakText || !text) {
+    return;
+  }
+
+  stopSpeaking();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'en-US';
+  utterance.rate = 0.95;
+  utterance.pitch = 1;
+
+  window.speechSynthesis.speak(utterance);
+}
+
+function stopSpeaking() {
+  if (canSpeakText) {
+    window.speechSynthesis.cancel();
+  }
+}
+
+function updateSpeechStatus() {
+  if (canSpeakText && canRecognizeSpeech) {
+    setSpeechStatus('Voice input and coach audio are available.');
+    return;
+  }
+
+  if (canSpeakText) {
+    setSpeechStatus('Coach audio is available. Speech-to-text is not supported in this browser.');
+    return;
+  }
+
+  if (canRecognizeSpeech) {
+    setSpeechStatus('Voice input is available. Text-to-speech is not supported in this browser.');
+    return;
+  }
+
+  setSpeechStatus('Speech tools are not supported in this browser. Try Chrome or Edge.');
+}
+
+function setSpeechStatus(message) {
+  speechStatusEl.textContent = message;
 }
 
 async function apiGet(path) {

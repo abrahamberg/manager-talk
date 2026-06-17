@@ -14,6 +14,8 @@
 - Build a backend-heavy TypeScript app around the existing markdown files; do not move or rename the existing content files unless explicitly asked.
 - Keep the backend responsible for state updates, answer evaluation, duplicate prevention, and level progression. The frontend should display and submit data, not decide pass/fail.
 - Preserve prompt caching order in LLM calls: stable instructions first, `inputs-levelX.md` second last among file-content blocks, `state.md` last among file-content blocks.
+- Keep task-specific prompt text after the file-content blocks so cached static context stays stable.
+- LLM calls default to `OPENAI_SERVICE_TIER=flex`; preserve that unless there is a concrete reason to change it.
 - Use two separate LLM flows: one to choose the next question and one to evaluate feedback. Follow-up questions after feedback must not update `state.md`.
 - Enforce duplicate-question prevention in code, even if the LLM selects a duplicate.
 
