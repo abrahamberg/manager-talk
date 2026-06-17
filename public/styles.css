@@ -1,0 +1,169 @@
+:root {
+  color: #16211f;
+  background: #f3efe7;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  gap: 24px;
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.panel,
+.chat-card {
+  border: 1px solid #ddd3c1;
+  border-radius: 28px;
+  background: #fffaf1;
+  box-shadow: 0 18px 60px rgb(88 65 35 / 12%);
+}
+
+.panel {
+  align-self: start;
+  padding: 28px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: #7a5c2d;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(32px, 6vw, 56px);
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+}
+
+.progress {
+  color: #51635d;
+  font-weight: 700;
+}
+
+.format-card {
+  margin-top: 24px;
+  padding: 18px;
+  border-radius: 18px;
+  background: #e7f0df;
+}
+
+.format-card span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.format-card p {
+  margin: 0;
+}
+
+.chat-card {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 64px);
+  padding: 20px;
+}
+
+.messages {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.message {
+  max-width: 780px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.message.coach {
+  align-self: flex-start;
+  background: #182724;
+  color: #fffaf1;
+}
+
+.message.user {
+  align-self: flex-end;
+  background: #f1d48b;
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding-top: 16px;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid #d8c9ae;
+  border-radius: 16px;
+  padding: 14px;
+  background: #fffdf8;
+  color: inherit;
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 16px;
+  padding: 0 20px;
+  background: #d75f31;
+  color: white;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.next-button {
+  align-self: flex-start;
+  margin-top: 12px;
+  padding: 12px 18px;
+  background: #182724;
+}
+
+@media (max-width: 760px) {
+  .shell {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .chat-card {
+    min-height: 65vh;
+  }
+
+  .composer {
+    grid-template-columns: 1fr;
+  }
+
+  button {
+    min-height: 48px;
+  }
+}
