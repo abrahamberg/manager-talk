@@ -14,7 +14,7 @@ const speechStatusEl = document.querySelector('#speech-status');
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const canSpeakText = 'speechSynthesis' in window;
 const canRecognizeSpeech = Boolean(SpeechRecognition);
-const speechSilenceTimeoutMs = 3500;
+const speechSilenceTimeoutMs = 6500;
 
 let mode = 'answering';
 let currentQuestion = null;
@@ -27,6 +27,8 @@ let currentAudio = null;
 let currentAudioUrl = null;
 let shouldKeepListening = false;
 let silenceTimer = null;
+let committedTranscript = '';
+let interimTranscript = '';
 
 formEl.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -280,6 +282,8 @@ function toggleSpeechRecognition() {
 
 function startListening() {
   stopSpeaking();
+  committedTranscript = inputEl.value.trim();
+  interimTranscript = '';
   isListening = true;
   shouldKeepListening = true;
   micButtonEl.textContent = 'Listening...';
@@ -292,12 +296,19 @@ function startListening() {
 function handleSpeechResult(event) {
   restartSilenceTimer();
 
-  const transcript = Array.from(event.results)
-    .map((result) => result[0]?.transcript ?? '')
-    .join('')
-    .trim();
+  for (let index = event.resultIndex; index < event.results.length; index += 1) {
+    const result = event.results[index];
+    const transcript = result[0]?.transcript ?? '';
 
-  inputEl.value = transcript;
+    if (result.isFinal) {
+      committedTranscript = joinTranscriptParts(committedTranscript, transcript);
+      interimTranscript = '';
+    } else {
+      interimTranscript = transcript.trim();
+    }
+  }
+
+  inputEl.value = joinTranscriptParts(committedTranscript, interimTranscript);
 }
 
 function handleSpeechError(event) {
@@ -348,6 +359,21 @@ function clearSilenceTimer() {
     window.clearTimeout(silenceTimer);
     silenceTimer = null;
   }
+}
+
+function joinTranscriptParts(base, addition) {
+  const trimmedBase = base.trim();
+  const trimmedAddition = addition.trim();
+
+  if (!trimmedBase) {
+    return trimmedAddition;
+  }
+
+  if (!trimmedAddition) {
+    return trimmedBase;
+  }
+
+  return `${trimmedBase} ${trimmedAddition}`.replace(/\s+/g, ' ');
 }
 
 async function speakTextIfEnabled(text) {

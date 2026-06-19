@@ -1,26 +1,26 @@
-User Current Level: 3
+User Current Level: 4
 # Communication Coach State
 
 Current State Summary:
-Level 3 is working: the user can give a short Problem-Action-Result story with clear action and result, but the problem and result should be stated more cleanly.
+Level 4 baseline is weak because the user did not answer the prompt with an example. They need practice giving situation, issue, action, visible change, and result in 4–6 sentences.
 
 Coaching Focus:
-Make the problem and result specific and easy to follow.
+Concrete example with visible before-and-after change.
 
 Improvement Strategy:
-Practice short prioritization stories so the user keeps the problem, action, and result separate and clear.
+Use a real work example and name one observable behavior change so the answer fits Level 4 structure.
 
 Next Question Reason:
-Conflict and disagreement is the next useful Level 3 category because it practices the same short story structure while helping the user make the problem and result even clearer.
+Communication is a useful Level 4 category to practice concrete before-and-after change, and it gives a clear path to visible behavior change.
 
-Consecutive Good Answers: 2
+Consecutive Good Answers: 0
 
 Current Question:
-- ID: level3-conflict-and-disagreement-001
-- Text: Tell me about a time two people disagreed.
-- Answer Format Summary: Answer with a short story. First say the problem, then what you did, then the result. Keep it to 3–5 sentences.
-- Expected Pattern: The problem was X. I did Y. As a result, Z happened.
-- Asked At: 2026-06-17T22:55:21.976Z
+- ID: level4-communication-001
+- Text: Tell me about a time communication was unclear and you improved it.
+- Answer Format Summary: Answer with a concrete example. Describe the situation, what was not working, what you did, what changed visibly, and the result. Keep it to 4–6 sentences.
+- Expected Pattern: The situation was X. The issue was Y. I did Z. The visible change was A. The result was B.
+- Asked At: 2026-06-18T19:13:46.411Z
 - Repeat Intentional: false
 
 Questions Asked Already:
@@ -49,3 +49,11 @@ Questions Asked Already:
 - level3-general-001 | 3 | needs_improvement | What the problem was | Level 3 baseline is weak because the user did not answer with a story yet. They need practice naming a problem, then action, then result.
 - level3-improving-ways-of-working-002 | 3 | good | Tell me about a time you changed a team process. | Level 3 is starting to work: the user can give a short Problem-Action-Result story with clear action and result.
 - level3-alignment-and-prioritization-002 | 3 | good | Tell me about a time priorities were unclear. | Level 3 is working: the user can give a short Problem-Action-Result story with clear action and result, but the problem and result should be stated more cleanly
+- level3-conflict-and-disagreement-001 | 3 | good | Tell me about a time two people disagreed. | Level 3 is working well. The user can tell a short Problem-Action-Result story with clear action and result; keep practicing cleaner problem and result statemen
+- level3-conflict-and-disagreement-003 | 3 | needs_improvement | Tell me about a time you helped resolve a disagreement. | Level 3 is still working, but the user needs cleaner problem and result statements in short disagreement stories.
+- level3-conflict-and-disagreement-004 | 3 | good | Tell me about a time people had different opinions about a technical decision. | Level 3 is working. The user can tell short disagreement stories with clear action and result, but the problem and result should be stated more cleanly and spec
+- level3-general-002 | 3 | good | What they did | Level 3 is working. The user can give short Problem-Action-Result stories, but the problem and action should be stated more cleanly and specifically.
+- level3-conflict-and-disagreement-002 | 3 | good | Tell me about a time there was conflict in the team. | Level 3 is working. The user can give short Problem-Action-Result stories, but the action and result should be stated more cleanly and specifically.
+- level3-improving-ways-of-working-001 | 3 | good | Tell me about a time you improved how a team worked. | Level 3 is working. The user can give short Problem-Action-Result stories, but the action and result should be stated more cleanly and specifically.
+- level3-alignment-and-prioritization-001 | 3 | good | Tell me about a time your team was not aligned. | Level 3 is working well. The user can give short Problem-Action-Result stories with clear action and result; keep tightening the problem and result wording.
+- level4-general-001 | 4 | needs_improvement | Situation | Level 4 baseline is weak because the user did not answer the prompt with an example. They need practice giving situation, issue, action, visible change, and res

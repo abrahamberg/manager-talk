@@ -33,7 +33,15 @@
           <button id="stop-speaking-button" class="secondary-button" type="button">Stop voice</button>
         </div>
         <form id="chat-form" class="composer">
-          <textarea id="message-input" rows="3" placeholder="Type your answer"></textarea>
+          <textarea
+            id="message-input"
+            rows="3"
+            placeholder="Type your answer"
+            autocapitalize="off"
+            autocorrect="off"
+            autocomplete="off"
+            spellcheck="false"
+          ></textarea>
           <button id="mic-button" class="mic-button" type="button">Speak</button>
           <button id="submit-button" type="submit">Send</button>
         </form>
