@@ -2,25 +2,25 @@ User Current Level: 4
 # Communication Coach State
 
 Current State Summary:
-Level 4 baseline is weak because the user did not answer the prompt with an example. They need practice giving situation, issue, action, visible change, and result in 4–6 sentences.
+Level 4 remains weak because the user asked for an example instead of giving one. They need practice with a concrete situation, one visible behavior change, and a clear result in 4–6 sentences.
 
 Coaching Focus:
 Concrete example with visible before-and-after change.
 
 Improvement Strategy:
-Use a real work example and name one observable behavior change so the answer fits Level 4 structure.
+Use one real work example and name one observable behavior change so the answer fits the Level 4 structure.
 
 Next Question Reason:
-Communication is a useful Level 4 category to practice concrete before-and-after change, and it gives a clear path to visible behavior change.
+Communication is the best next Level 4 practice because it naturally supports a concrete before-and-after example and visible behavior change.
 
 Consecutive Good Answers: 0
 
 Current Question:
-- ID: level4-communication-001
-- Text: Tell me about a time communication was unclear and you improved it.
+- ID: level4-communication-002
+- Text: Tell me about a time you made information more visible.
 - Answer Format Summary: Answer with a concrete example. Describe the situation, what was not working, what you did, what changed visibly, and the result. Keep it to 4–6 sentences.
 - Expected Pattern: The situation was X. The issue was Y. I did Z. The visible change was A. The result was B.
-- Asked At: 2026-06-18T19:13:46.411Z
+- Asked At: 2026-06-19T20:26:05.586Z
 - Repeat Intentional: false
 
 Questions Asked Already:
@@ -57,3 +57,4 @@ Questions Asked Already:
 - level3-improving-ways-of-working-001 | 3 | good | Tell me about a time you improved how a team worked. | Level 3 is working. The user can give short Problem-Action-Result stories, but the action and result should be stated more cleanly and specifically.
 - level3-alignment-and-prioritization-001 | 3 | good | Tell me about a time your team was not aligned. | Level 3 is working well. The user can give short Problem-Action-Result stories with clear action and result; keep tightening the problem and result wording.
 - level4-general-001 | 4 | needs_improvement | Situation | Level 4 baseline is weak because the user did not answer the prompt with an example. They need practice giving situation, issue, action, visible change, and res
+- level4-communication-001 | 4 | needs_improvement | Tell me about a time communication was unclear and you improved it. | Level 4 remains weak because the user asked for an example instead of giving one. They need practice with a concrete situation, one visible behavior change, and

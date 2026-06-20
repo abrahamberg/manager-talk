@@ -50,7 +50,7 @@ export function buildFollowUpMessages(args: {
 
 function buildFeedbackTask(question: QuestionSelection, answerText: string): string {
   return [
-    'TASK: Evaluate answer, update compact state, choose next question.',
+    'TASK: You are the coach! Evaluate answer and give feedback, update compact state, choose next question. or answer user follow-up question.',
     '',
     'CURRENT LEVEL EVALUATION LENS:',
     `Level: ${question.level}`,
